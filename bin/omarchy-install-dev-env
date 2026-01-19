@@ -1,13 +1,116 @@
 #!/bin/bash
 
 if [[ -z "$1" ]]; then
-  echo "Usage: omarchy-install-dev-env <ruby|node|bun|go|laravel|symfony|php|python|elixir|phoenix|rust|java|ocaml|dotnet|clojure>" >&2
+  echo "Usage: omarchy-install-dev-env <ruby|node|bun|go|laravel|symfony|php[:version] [extensions...]|python|elixir|phoenix|rust|java|ocaml|dotnet|clojure>" >&2
+  echo "Examples:" >&2
+  echo "  omarchy-install-dev-env php                    # Install latest PHP" >&2
+  echo "  omarchy-install-dev-env php:8.2                # Install PHP 8.2" >&2
+  echo "  omarchy-install-dev-env php:8.1 redis mongodb  # Install PHP 8.1 with extensions" >&2
+  echo "  omarchy-install-dev-env php redis grpc sodium  # Install latest PHP with extensions" >&2
+  echo "" >&2
+  echo "Available PHP extensions: redis, mongodb, grpc, protobuf, igbinary, sodium, gmp" >&2
   exit 1
 fi
 
 install_php() {
-  sudo pacman -S php composer php-sqlite xdebug --noconfirm
-
+  local php_version="${1:-latest}"
+  shift # Remove first argument (version)
+  local extensions=("$@") # Remaining arguments are extensions
+  
+  echo "Installing PHP build dependencies..."
+  
+  # Install build dependencies for compiling PHP from source
+  sudo pacman -S --needed --noconfirm \
+    base-devel \
+    re2c \
+    autoconf \
+    bison \
+    curl \
+    libxml2 \
+    openssl \
+    zlib \
+    readline \
+    gettext \
+    libjpeg-turbo \
+    libpng \
+    freetype2 \
+    gd \
+    icu \
+    oniguruma \
+    sqlite \
+    postgresql-libs \
+    libzip \
+    libxslt \
+    gmp \
+    libedit \
+    libsodium \
+    protobuf \
+    grpc \
+    hiredis \
+    mongodb-tools
+  
+  echo "Installing PHP ${php_version} via mise..."
+  
+  # Install PHP via mise for version management
+  mise use --global "php@${php_version}"
+  
+  # Install Composer globally via mise
+  mise use --global composer@latest
+  
+  # Install PECL extensions if requested
+  if [[ ${#extensions[@]} -gt 0 ]]; then
+    echo "Installing PHP extensions: ${extensions[*]}"
+    
+    # Get PHP installation path
+    php_path=$(mise where php@${php_version})
+    
+    for ext in "${extensions[@]}"; do
+      case "$ext" in
+        redis)
+          echo "Installing Redis extension..."
+          mise exec php@${php_version} -- pecl install redis
+          echo "extension=redis.so" >> "${php_path}/conf.d/php.ini"
+          ;;
+        mongodb)
+          echo "Installing MongoDB extension..."
+          mise exec php@${php_version} -- pecl install mongodb
+          echo "extension=mongodb.so" >> "${php_path}/conf.d/php.ini"
+          ;;
+        grpc)
+          echo "Installing gRPC extension..."
+          mise exec php@${php_version} -- pecl install grpc
+          echo "extension=grpc.so" >> "${php_path}/conf.d/php.ini"
+          ;;
+        protobuf)
+          echo "Installing Protobuf extension..."
+          mise exec php@${php_version} -- pecl install protobuf
+          echo "extension=protobuf.so" >> "${php_path}/conf.d/php.ini"
+          ;;
+        igbinary)
+          echo "Installing Igbinary extension..."
+          mise exec php@${php_version} -- pecl install igbinary
+          echo "extension=igbinary.so" >> "${php_path}/conf.d/php.ini"
+          ;;
+        sodium)
+          echo "Enabling Sodium extension (built-in)..."
+          echo "extension=sodium" >> "${php_path}/conf.d/php.ini"
+          ;;
+        gmp)
+          echo "Enabling GMP extension (built-in)..."
+          echo "extension=gmp" >> "${php_path}/conf.d/php.ini"
+          ;;
+        *)
+          echo "Installing ${ext} extension..."
+          mise exec php@${php_version} -- pecl install "$ext" || true
+          echo "extension=${ext}.so" >> "${php_path}/conf.d/php.ini"
+          ;;
+      esac
+    done
+    
+    echo "Extensions installed. Verifying..."
+    mise exec php@${php_version} -- php -m | grep -E "(redis|mongodb|grpc|protobuf|igbinary|sodium|gmp)" || true
+  fi
+  
   # Install Path for Composer
   if [[ ":$PATH:" != *":$HOME/.config/composer/vendor/bin:"* ]]; then
     echo 'export PATH="$HOME/.config/composer/vendor/bin:$PATH"' >>"$HOME/.bashrc"
@@ -16,27 +119,11 @@ install_php() {
   else
     echo "Composer global bin directory already in PATH."
   fi
-
-  # Enable some extensions
-  local php_ini_path="/etc/php/php.ini"
-  local extensions_to_enable=(
-    "bcmath"
-    "intl"
-    "iconv"
-    "openssl"
-    "pdo_sqlite"
-    "pdo_mysql"
-  )
-
-  # Enable Xdebug
-  sudo sed -i \
-    -e 's/^;zend_extension=xdebug.so/zend_extension=xdebug.so/' \
-    -e 's/^;xdebug.mode=debug/xdebug.mode=debug/' \
-    /etc/php/conf.d/xdebug.ini
-
-  for ext in "${extensions_to_enable[@]}"; do
-    sudo sed -i "s/^;extension=${ext}/extension=${ext}/" "$php_ini_path"
-  done
+  
+  echo "PHP ${php_version} installation completed via mise."
+  echo "You can switch PHP versions using: mise use php@<version>"
+  echo "Available versions can be listed with: mise list-remote php"
+  echo "To install extensions later: omarchy-install-dev-env php:${php_version} redis mongodb grpc"
 }
 
 install_node() {
@@ -68,9 +155,25 @@ go)
   echo -e "Installing Go...\n"
   mise use --global go@latest
   ;;
-php)
-  echo -e "Installing PHP...\n"
-  install_php
+php*)
+  # Parse PHP version if specified (e.g., php:8.2)
+  if [[ "$1" == *":"* ]]; then
+    php_version="${1#*:}"
+  else
+    php_version="latest"
+  fi
+  
+  # Shift to get extension arguments
+  shift
+  extensions=("$@")
+  
+  echo -e "Installing PHP ${php_version}...\n"
+  if [[ ${#extensions[@]} -gt 0 ]]; then
+    echo "With extensions: ${extensions[*]}"
+    install_php "$php_version" "${extensions[@]}"
+  else
+    install_php "$php_version"
+  fi
   ;;
 laravel)
   echo -e "Installing PHP and Laravel...\n"

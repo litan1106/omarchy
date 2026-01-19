@@ -7,5 +7,9 @@ export PATH=$OMARCHY_PATH/bin/:$PATH
 # Set default terminal and editor
 source ~/.config/uwsm/default
 
+# Ensure all exports from bashrc are available system-wide for GUI apps like VS Code
+# This makes non-login shell exports available to all applications
+[[ -f ~/.bashrc ]] && source ~/.bashrc
+
 # Activate mise if present on the system
 omarchy-cmd-present mise && eval "$(mise activate bash)"
