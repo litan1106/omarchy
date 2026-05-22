@@ -5,12 +5,14 @@
 ```bash
 omarchy-webapp-install "Claude" https://claude.ai https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/claude-ai-light.svg
 omarchy-webapp-install "Gemini" https://gemini.google.com https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/google-gemini.svg
+omarchy-webapp-install "NotebookLLM" https://notebooklm.google.com https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/notebook-lm.svg
 ```
 ## Office Apps
 
 ```bash
 omarchy-webapp-install "Microsoft Teams" https://teams.microsoft.com https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/microsoft-teams.svg
 omarchy-webapp-install "Microsoft Outlook" https://outlook.office.com https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/microsoft-outlook.svg
+omarchy-webapp-install "Microsoft Todo" https://to-do.office.com/tasks/inbox https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/microsoft-to-do.svg
 ```
 
 ## Work Apps
