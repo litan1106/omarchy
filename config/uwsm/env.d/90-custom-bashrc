@@ -1,0 +1,4 @@
+# UWSM sources environment drop-ins with /bin/sh.
+if [ -f "$HOME/.bashrc" ]; then
+  . "$HOME/.bashrc"
+fi
