@@ -1,0 +1,4 @@
+[[ -f $HOME/.bashrc ]] && source "$HOME/.bashrc"
+
+# Noninteractive login shells also need standalone tool precedence.
+[[ -r $HOME/.config/shell/standalone-path.sh ]] && source "$HOME/.config/shell/standalone-path.sh"

@@ -102,3 +102,26 @@ mapfile -t reordered_result < <(run_bootstrap bash "$bootstrap" "$home" "$inheri
 [[ ${reordered_result[1]} == "$home/.local/share/mise/command-wrappers/bin:$tmpdir/active/bin:$tmpdir/managed/bin:/usr/bin:$home/.local/share/mise/shims:$home/.local/bin" ]] ||
   fail "bootstrap moves existing wrappers ahead of inherited managed tool paths without duplication" "${reordered_result[1]}"
 pass "bootstrap moves existing wrappers ahead of inherited managed tool paths without duplication"
+
+mkdir -p "$home/.config/shell"
+cp "$ROOT/config/shell/"*.sh "$home/.config/shell/"
+HOME="$home" bash --noprofile --norc -eu -c '
+  PATH="/managed/bin:$HOME/.local/bin:/usr/bin:$HOME/.opencode/bin:$HOME/.local/bin"
+  source "$HOME/.config/shell/standalone-path.sh"
+  expected="$HOME/.local/bin:$HOME/.opencode/bin:/managed/bin:/usr/bin"
+  [[ $PATH == "$expected" ]]
+  _standalone_path_first
+  [[ $PATH == "$expected" ]]
+  PATH=""
+  _standalone_path_first
+  [[ $PATH == "$HOME/.local/bin:$HOME/.opencode/bin" ]]
+
+  PROMPT_COMMAND=("PATH=/managed/bin:/usr/bin")
+  chpwd_functions=("_standalone_path_first")
+  source "$HOME/.config/shell/standalone-bash.sh"
+  source "$HOME/.config/shell/standalone-bash.sh"
+  [[ ${#PROMPT_COMMAND[@]} == 2 && ${#chpwd_functions[@]} == 1 ]]
+  for hook in "${PROMPT_COMMAND[@]}"; do eval "$hook"; done
+  [[ $PATH == "$HOME/.local/bin:$HOME/.opencode/bin:/managed/bin:/usr/bin" ]]
+' || fail "standalone paths precede managed paths after repeated setup and prompt updates"
+pass "standalone paths precede managed paths after repeated setup and prompt updates"

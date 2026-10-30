@@ -6,6 +6,12 @@ These extras are carried forward from the v3 `custom` branch onto upstream `quat
 
 The Bash export hook now lives in `config/uwsm/env.d/90-custom-bashrc`, replacing the retired `config/uwsm/env`. For an existing user, copy it to `~/.config/uwsm/env.d/90-custom-bashrc` and log out and back in. Exports in `~/.bashrc` must appear before its non-interactive-shell return to reach GUI applications. Alternatively, put session exports directly in `~/.config/uwsm/env.d/`.
 
+## Standalone CLI PATH
+
+Standalone installers take precedence over mise and npm installations: `~/.local/bin` comes first, followed by `~/.opencode/bin`. Shared configuration lives in `config/shell/`; Bash and Zsh hooks restore this order after prompt and directory-change updates. `config/uwsm/env.d/99-standalone-path.sh` applies the same order to desktop launches after UWSM's mise setup.
+
+For an existing user, copy `config/shell/` to `~/.config/shell/` and the UWSM drop-in to `~/.config/uwsm/env.d/`. Source `~/.config/shell/standalone-bash.sh` at the end of `~/.bashrc`, `~/.config/shell/standalone-zsh.sh` at the end of `~/.zshrc`, and `~/.config/shell/standalone-path.sh` at the end of `~/.bash_profile`. `default/bash_profile` and `default/zshrc` provide templates; they are not automatically installed by the external settings package. New shells pick up the changes immediately; log out and back in for the desktop session.
+
 ## AI Apps
 
 ```bash
