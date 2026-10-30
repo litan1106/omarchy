@@ -1,6 +1,18 @@
 #!/bin/bash
 
 # omarchy:summary=Update mise-managed tools
+# omarchy:args=[--force]
+# omarchy:examples=omarchy update mise | omarchy update mise --force
+
+if (($# > 1)) || [[ -n ${1:-} && $1 != "--force" ]]; then
+  echo "Usage: omarchy-update-mise [--force]" >&2
+  exit 1
+fi
+
+if [[ ${1:-} != "--force" ]] && omarchy-toggle-enabled mise-updates-off; then
+  echo "Skipping mise tool updates (disabled). Run 'omarchy update mise --force' to update once."
+  exit 0
+fi
 
 if omarchy-cmd-present mise; then
   echo -e "\e[32m\nUpdate mise tools\e[0m"

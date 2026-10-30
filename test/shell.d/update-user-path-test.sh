@@ -45,6 +45,44 @@ STUB
   chmod +x "$SUDO_TEST_ROOT/bin/$step"
 done
 
+# Exercise the real mise update step with a user-installed mise. The opt-out
+# must skip the tool, while a deliberate manual update can override it.
+mise_home="$boundary_tmp/mise home"
+mise_log="$boundary_tmp/mise-updates"
+mkdir -p "$mise_home"
+cat >"$boundary_tmp/user commands/mise" <<'STUB'
+#!/bin/bash
+printf '%s release-age=%s\n' "$*" "${MISE_MINIMUM_RELEASE_AGE:-}" >>"$MISE_UPDATE_TEST_LOG"
+STUB
+chmod +x "$boundary_tmp/user commands/mise"
+
+run_mise_update() {
+  HOME="$mise_home" MISE_UPDATE_TEST_LOG="$mise_log" \
+    PATH="$boundary_tmp/user commands:$ROOT/bin:/usr/bin" \
+    "$ROOT/bin/omarchy-update-mise" "$@" >"$boundary_tmp/mise-output" 2>&1
+}
+
+run_mise_update
+[[ $(<"$mise_log") == "up release-age=0" ]] || fail "mise updates are enabled by default"
+pass "mise updates use the user's executable and allow fresh releases"
+
+HOME="$mise_home" "$ROOT/bin/omarchy-toggle" mise-updates-off on
+: >"$mise_log"
+run_mise_update
+[[ ! -s $mise_log ]] || fail "opting out still runs mise" "$(<"$mise_log")"
+pass "the user opt-out skips mise updates"
+
+run_mise_update --force
+[[ $(<"$mise_log") == "up release-age=0" ]] || fail "a manual update cannot override the opt-out"
+[[ -f $mise_home/.local/state/omarchy/toggles/mise-updates-off ]] || fail "a manual update clears the opt-out"
+pass "a forced manual update preserves the opt-out"
+
+HOME="$mise_home" "$ROOT/bin/omarchy-toggle" mise-updates-off off
+: >"$mise_log"
+run_mise_update
+[[ $(<"$mise_log") == "up release-age=0" ]] || fail "opting back in does not restore mise updates"
+pass "mise updates resume after opting back in"
+
 for entry in fresh logged locked; do
   reset_boundary
   unset OMARCHY_UPDATE_LOGGED OMARCHY_UPDATE_USER_PATH SUDO_TEST_LOCKED

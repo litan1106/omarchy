@@ -32,6 +32,8 @@ mise install --include-lazy    # Install all configured tools, including lazy to
 
 Run `omarchy update` to update installed tools with the rest of Omarchy. The `mup` alias updates mise-managed tools only. To add another tool to your own configuration, use `mise use -g <tool>`.
 
+To update tools separately from the system, run `omarchy toggle mise-updates-off on`. You can still update them with `mise up` or `omarchy update mise --force`; run `omarchy toggle mise-updates-off off` to include them in system updates again. This does not disable an agent's updates when launched.
+
 Python setup also installs `uv` through mise. Removing the Python development environment leaves `uv` available as an independent tool.
 
 ### Using your own installation
@@ -44,6 +46,18 @@ disable_tools = ["cursor-agent"]
 ```
 
 If you already have a `[settings]` table, add the entry there; extend an existing `disable_tools` list rather than replacing it. Make sure your installation is on `PATH`. Use the mise tool name, which can differ from its command: `oh-my-pi` provides `omp`, for example. The default-agent launcher also prefers a user-installed Cursor or Muse in `~/.local/bin`.
+
+For Claude Code, disable mise's copy and use [Anthropic's native installer](https://code.claude.com/docs/en/setup#install-claude-code). If an older installation used npm or pnpm, first remove that package with `npm uninstall -g @anthropic-ai/claude-code` or `pnpm remove -g @anthropic-ai/claude-code`, using the package manager that installed it. Keep `~/.claude/` and `~/.claude.json` to preserve your settings and history.
+
+```bash
+mise settings add disable_tools claude
+mise reshim
+curl -fsSL https://claude.ai/install.sh | bash
+```
+
+The first command extends your existing `disable_tools` list. Open a new terminal, then run `claude --version` and `claude doctor` to verify the installation. Omarchy's default-agent launcher and subscription accounts also support this native installation. Disabling mise's copy prevents its first-use installation and updates; the native installer manages Claude's updates.
+
+The current Omarchy default declares `claude` through mise rather than installing that npm package directly.
 
 ### Removing and restoring defaults
 

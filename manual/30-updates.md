@@ -8,6 +8,18 @@ When new releases are made, a circle arrow icon will appear to the right of your
 
 ![update-available](images/update-available.webp)
 
+### Updating CLI tools separately
+
+To keep mise-managed CLI tools, including npm-backed agents, out of `omarchy update`, run:
+
+```bash
+omarchy toggle mise-updates-off on
+```
+
+This preference applies to your user and survives Omarchy updates. It keeps installed tools available. To update them once, run `omarchy update mise --force` or `mise up`. To include them in system updates again, run `omarchy toggle mise-updates-off off`.
+
+Agents can still update through mise when launched, or through their own updater. To use Claude Code's official installer instead of mise, see [Using your own installation](18-development-tools.md#using-your-own-installation).
+
 ### Four channels
 
 Omarchy is updated along four channels: stable, RC, edge, and dev. New installations start on the stable channel, which tracks the [official releases](https://github.com/omacom/omarchy/releases/), as well as the [stable Omarchy Arch mirror](https://github.com/omacom-io/omarchy-mirror) that's running one month behind the latest, so we can catch any new incompatibilities that require config changes before they cause problems for people.
